@@ -834,7 +834,109 @@
     <canvas id="confetti"></canvas>
 
     <script>
-        // 3단계부터 채웁니다
+        'use strict';
+
+        /* =====================================================================
+         *  ⚙️ 설정값 (운영 중 조정은 여기만 수정)
+         * ===================================================================== */
+        const EASTER_EGG_CHANCE = 0.02;                                   // 잭팟(메가임형대 3칸) 확률 2%
+        const NORMAL_SYMBOLS = ['피카츄', '파이리', '꼬부기', '이상해씨']; // 일반 심볼 (각 25%)
+        const EASTER_EGG_SYMBOL = '메가임형대';                            // 이스터에그 전용
+        const IMAGE_DIR = 'images/';
+        const IMAGE_EXT = '.png';
+        const SUCCESS_MATCH = 2;       // 같은 포켓몬 몇 칸 이상이면 성공
+        const STOP_IN_ORDER = true;    // true: 1→2→3 순서대로만 STOP
+        const SPIN_SPEED = 16;      // 회전 속도 (칸/초)
+        const MIN_SPIN_MS = 600;     // 시작 후 STOP 가능해지기까지 시간 (연타 방지)
+        const STOP_DISTANCE = 6;       // STOP 후 감속하며 더 지나가는 칸 수
+        const RETRY_LOCK_MS = 1000;    // 결과 화면 '다시 하기' 오터치 방지
+        const TYPE_SPEED_MS = 28;      // 대화창 글자 찍히는 속도
+
+        const ALL_SYMBOLS = [...NORMAL_SYMBOLS, EASTER_EGG_SYMBOL];
+        const FORCE = new URLSearchParams(location.search).get('force');  // 리허설용 ?force=lucky|win|lose
+
+        /* =====================================================================
+         *  🎲 확률 로직 — 애니메이션 전에 결과부터 확정
+         * ===================================================================== */
+        function randInt(n) { return Math.floor(Math.random() * n); }   // 0 ~ n-1 균등
+
+        function shuffle(arr) {                                         // Fisher–Yates 셔플
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) { const j = randInt(i + 1);[a[i], a[j]] = [a[j], a[i]]; }
+            return a;
+        }
+
+        function decideResult() {
+            // 1) 이스터에그 판정을 가장 먼저
+            if (Math.random() < EASTER_EGG_CHANCE) {
+                return [EASTER_EGG_SYMBOL, EASTER_EGG_SYMBOL, EASTER_EGG_SYMBOL];
+            }
+            // 2) 낙첨 시: 릴 3개가 서로 독립적으로, 일반 4종 중 균등 확률(25%)
+            //    → 메가임형대는 이 풀에 없으므로 1~2칸만 나오는 경우는 구조적으로 불가능
+            return [0, 1, 2].map(() => NORMAL_SYMBOLS[randInt(NORMAL_SYMBOLS.length)]);
+        }
+
+        function forcedResult(mode) {   // 리허설용 강제 결과
+            if (mode === 'lucky') return [EASTER_EGG_SYMBOL, EASTER_EGG_SYMBOL, EASTER_EGG_SYMBOL];
+            if (mode === 'win') { const [a, b] = shuffle(NORMAL_SYMBOLS); return shuffle([a, a, b]); }
+            if (mode === 'lose') return shuffle(NORMAL_SYMBOLS).slice(0, 3);
+            return null;
+        }
+
+        function judge(symbols) {
+            if (symbols.every(s => s === EASTER_EGG_SYMBOL)) return { type: 'lucky' };
+            const counts = {};
+            symbols.forEach(s => { counts[s] = (counts[s] || 0) + 1; });
+            let best = null, max = 0;
+            for (const s in counts) if (counts[s] > max) { best = s; max = counts[s]; }
+            if (max >= SUCCESS_MATCH) return { type: 'win', symbol: best, count: max };
+            return { type: 'lose' };
+        }
+
+        /* =====================================================================
+         *  🖼️ 이미지 로드 확인
+         * ===================================================================== */
+        const imageOk = {};                               // 이름 → true / false
+        const srcOf = name => IMAGE_DIR + name + IMAGE_EXT;
+
+        function checkImages() {
+            return Promise.all(ALL_SYMBOLS.map(name => new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => { imageOk[name] = true; resolve(); };
+                img.onerror = () => { imageOk[name] = false; resolve(); };   // 실패해도 멈추지 않고 기록만
+                img.src = srcOf(name);
+            })));
+        }
+
+        function showImageErrors(missing) {
+            const banner = document.getElementById('errorBanner');
+            banner.innerHTML = '';
+            missing.forEach(name => {
+                const p = document.createElement('p');
+                p.textContent = `⚠️ ${srcOf(name)} 파일을 찾을 수 없습니다`;
+                banner.appendChild(p);
+            });
+            const hint = document.createElement('p');
+            hint.className = 'hint';
+            hint.innerHTML = location.protocol === 'file:'
+                ? '파일을 더블클릭(file://)으로 열면 이미지가 막힐 수 있어요. 이 폴더에서 <code>python -m http.server 8000</code> 실행 후 <code>http://localhost:8000</code> 으로 접속하세요.'
+                : '<code>images/</code> 폴더 안에 파일이 있는지, 파일명과 확장자(.png)가 정확한지 확인하세요. 빠진 칸은 이름 글자로 대신 표시됩니다.';
+            banner.appendChild(hint);
+            banner.hidden = false;
+        }
+
+        /* =====================================================================
+         *  ▶ 시작 (항상 맨 아래 — 단계마다 이 블록만 교체)
+         * ===================================================================== */
+        (function init() {
+            checkImages().then(() => {
+                const missing = ALL_SYMBOLS.filter(n => !imageOk[n]);
+                if (missing.length) showImageErrors(missing);
+                document.getElementById('status').textContent =
+                    `이미지 ${ALL_SYMBOLS.length - missing.length}/${ALL_SYMBOLS.length}개 확인 완료!`;
+            });
+            window.PokeRoulette = { decideResult, judge, forcedResult, EASTER_EGG_CHANCE, NORMAL_SYMBOLS, EASTER_EGG_SYMBOL };  // 콘솔 테스트용
+        })();
     </script>
 </body>
 
