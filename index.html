@@ -771,6 +771,256 @@
                 animation: none !important;
             }
         }
+
+        /* ───── 전설의 포켓몬 등장 연출 (LUCKY) ───── */
+        .overlay.legend {
+            animation: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .overlay.legend.reveal {
+            background: #000;
+        }
+
+        .enc-layer {
+            display: none;
+        }
+
+        .overlay.enc .enc-layer {
+            display: block;
+        }
+
+        .enc-flash {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            opacity: 0;
+            animation: encFlash .6s steps(1) forwards;
+        }
+
+        @keyframes encFlash {
+
+            0%,
+            34%,
+            68% {
+                opacity: 1;
+            }
+
+            17%,
+            51%,
+            85%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .enc-bars {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .enc-bars i {
+            flex: 1;
+            background: #000;
+            transform: scaleX(0);
+            animation: barIn .45s steps(6) forwards;
+        }
+
+        .enc-bars i:nth-child(odd) {
+            transform-origin: left;
+        }
+
+        .enc-bars i:nth-child(even) {
+            transform-origin: right;
+        }
+
+        @keyframes barIn {
+            to {
+                transform: scaleX(1);
+            }
+        }
+
+        .aura {
+            display: none;
+            position: fixed;
+            inset: -50%;
+            pointer-events: none;
+            background: repeating-radial-gradient(circle at 50% 42%, rgba(150, 70, 255, .35) 0 24px, transparent 24px 48px);
+            animation: auraPulse .8s steps(4) infinite;
+        }
+
+        .overlay.reveal .aura {
+            display: block;
+        }
+
+        .overlay.revealed .aura {
+            background: repeating-radial-gradient(circle at 50% 42%, rgba(248, 208, 48, .35) 0 24px, transparent 24px 48px);
+        }
+
+        @keyframes auraPulse {
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .legend-stage {
+            display: none;
+            position: relative;
+            margin: auto;
+            width: min(100%, 620px);
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(12px, 2.5vh, 22px);
+        }
+
+        .overlay.reveal .legend-stage {
+            display: flex;
+            animation: rumble .1s steps(2) 12;
+        }
+
+        .overlay.revealed .legend-stage {
+            animation: rumble .08s steps(2) 8;
+        }
+
+        @keyframes rumble {
+            50% {
+                transform: translate(4px, -4px);
+            }
+        }
+
+        .legend-title {
+            visibility: hidden;
+            font-weight: 700;
+            font-size: clamp(22px, 4.5vw, 38px);
+            color: var(--yellow);
+            text-shadow: 3px 3px 0 var(--red);
+            animation: blink2 .4s steps(1) infinite;
+        }
+
+        .overlay.revealed .legend-title {
+            visibility: visible;
+        }
+
+        @keyframes blink2 {
+            50% {
+                color: #fff;
+            }
+        }
+
+        .legend-img {
+            width: clamp(140px, min(40vw, 34vh), 280px);
+            aspect-ratio: 1;
+            object-fit: cover;
+            image-rendering: pixelated;
+            filter: brightness(0) drop-shadow(0 0 6px #b070ff) drop-shadow(0 0 18px #8040ff);
+            animation: shiver .12s steps(2) infinite;
+        }
+
+        .legend-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 96px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        @keyframes shiver {
+            50% {
+                transform: translateX(3px);
+            }
+        }
+
+        .overlay.revealed .legend-img {
+            filter: none;
+            background: var(--yellow);
+            border: 6px solid var(--ink);
+            box-shadow: 0 0 0 5px var(--yellow), 0 0 0 10px var(--ink), 0 0 60px 20px rgba(248, 208, 48, .7);
+            animation: legendIn .5s steps(5), float 1s 0.5s steps(2) infinite;
+        }
+
+        @keyframes legendIn {
+            from {
+                transform: scale(.3);
+            }
+        }
+
+        @keyframes float {
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .reveal-flash {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            pointer-events: none;
+        }
+
+        .overlay.revealed .reveal-flash {
+            display: block;
+            animation: revealFlash .5s steps(1) forwards;
+        }
+
+        @keyframes revealFlash {
+
+            0%,
+            40% {
+                opacity: 1;
+            }
+
+            20%,
+            60%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .legend-dialog {
+            width: 100%;
+        }
+
+        .legend-skip {
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* 스탬프 3개 */
+        .stamp-count {
+            font-weight: 700;
+            font-size: clamp(24px, 4.5vw, 36px);
+            color: var(--red);
+            text-shadow: 3px 3px 0 var(--ink);
+            margin-top: 8px;
+        }
+
+        .stamp-row {
+            display: flex;
+            justify-content: center;
+            gap: clamp(6px, 1.6vw, 14px);
+            margin-top: 8px;
+        }
+
+        .stamp-row .stamp {
+            width: clamp(88px, min(20vw, 15vh), 140px);
+            margin-top: 0;
+            padding: 6px;
+            gap: 3px;
+        }
+
+        .stamp-row .stamp .s-main {
+            font-size: clamp(13px, 2.3vw, 20px);
+        }
+
+        .stamp-row .stamp .s-top,
+        .stamp-row .stamp .s-bot {
+            font-size: clamp(9px, 1.4vw, 12px);
+        }
     </style>
 </head>
 
@@ -850,6 +1100,7 @@
         const MIN_SPIN_MS = 600;     // 시작 후 STOP 가능해지기까지 시간 (연타 방지)
         const STOP_DISTANCE = 6;       // STOP 후 감속하며 더 지나가는 칸 수
         const RETRY_LOCK_MS = 1000;    // 결과 화면 '다시 하기' 오터치 방지
+        const LUCKY_STAMPS = 3;        // 전설(메가임형대) 등장 시 지급 스탬프 수
         const TYPE_SPEED_MS = 28;      // 대화창 글자 찍히는 속도
 
         const ALL_SYMBOLS = [...NORMAL_SYMBOLS, EASTER_EGG_SYMBOL];
@@ -1061,12 +1312,14 @@
                 if (ctx.state === 'suspended') ctx.resume();
                 return ctx;
             }
-            function tone(freq, dur, type = 'square', vol = 0.07, delay = 0) {
+            // freq → toFreq 로 음이 미끄러지는 소리 (toFreq 생략하면 고정음)
+            function tone(freq, dur, type = 'square', vol = 0.07, delay = 0, toFreq = null) {
                 if (muted) return;
                 const c = ac(); if (!c) return;
                 const t = c.currentTime + delay;
                 const o = c.createOscillator(), g = c.createGain();
                 o.type = type; o.frequency.setValueAtTime(freq, t);
+                if (toFreq) o.frequency.exponentialRampToValueAtTime(toFreq, t + dur);
                 g.gain.setValueAtTime(vol, t);
                 g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
                 o.connect(g).connect(c.destination);
@@ -1085,6 +1338,22 @@
                     [523, 659, 784, 1047, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, .22, 'square', .07, i * .1));
                     [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, .5, 'triangle', .06, .9 + i * .05));
                 },
+                // ── 전설 등장용 ──
+                encounter() {                                  // 조우: 번쩍번쩍 + 빠른 하강음
+                    [880, 660, 880, 660, 880, 660].forEach((f, i) => tone(f, .08, 'square', .06, i * .09));
+                    tone(1200, .5, 'square', .06, .6, 150);
+                },
+                rumble() {                                     // 실루엣: 낮게 우르릉
+                    for (let i = 0; i < 6; i++) tone(55 + (i % 2) * 8, .25, 'triangle', .18, i * .22);
+                    tone(110, 1.2, 'sawtooth', .03, .2, 220);
+                },
+                legend() {                                     // 공개: 울음소리 + 웅장한 화음
+                    tone(700, .35, 'sawtooth', .06, 0, 1400);
+                    tone(1400, .5, 'sawtooth', .05, .3, 500);
+                    [[196, 247, 294], [220, 277, 330], [262, 330, 392, 523]].forEach((chord, k) =>
+                        chord.forEach(f => tone(f, k === 2 ? 1.0 : .35, 'square', .04, .9 + k * .35)));
+                },
+                stamp() { tone(120, .12, 'square', .14); tone(60, .15, 'triangle', .15); },
             };
         })();
 
@@ -1162,21 +1431,220 @@
         reels.forEach(r => { r.onStopped = onReelStopped; });
 
         /* =====================================================================
-         *  🏁 결과 (임시) — 6단계에서 이 블록 통째로 교체
-         * ===================================================================== */
+ *  🎉 도트 컨페티 (캔버스에 네모 조각을 4px 격자로 그림)
+ * ===================================================================== */
+        const confetti = (() => {
+            const cv = document.getElementById('confetti');
+            const ctx = cv.getContext('2d');
+            let W = 0, H = 0, parts = [], running = false, rainUntil = 0, palette = [];
+            const PAL_WIN = ['#e03c28', '#f8d030', '#48b048', '#3c64d8', '#e878a8', '#f8f8f8'];
+            const PAL_LUCKY = ['#f8d030', '#fff4b0', '#e03c28', '#f8f8f8', '#ffb000'];
+            const SIZE = 8;
+            function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
+            const rnd = (a, b) => a + Math.random() * (b - a);
+            function add(x, y, vx, vy) { parts.push({ x, y, vx, vy, t: rnd(0, 6.28), color: palette[randInt(palette.length)] }); }
+            function cannon(n) {                     // 양쪽 아래에서 위로 발사
+                for (let i = 0; i < n; i++) {
+                    add(0, H * .85, rnd(5, 14), rnd(-19, -10));
+                    add(W, H * .85, rnd(-14, -5), rnd(-19, -10));
+                }
+            }
+            function rain(n) { for (let i = 0; i < n; i++) add(rnd(0, W), rnd(-60, -10), rnd(-2, 2), rnd(2, 5)); }
+            function frame() {
+                ctx.clearRect(0, 0, W, H);
+                if (performance.now() < rainUntil) rain(4);
+                parts = parts.filter(p => p.y < H + 20);                             // 화면 밖으로 나간 조각 제거
+                for (const p of parts) {
+                    p.vy += 0.32; p.vx *= 0.985; p.vy *= 0.985;                        // 중력 + 공기저항
+                    p.x += p.vx; p.y += p.vy; p.t += 0.2;
+                    const x = Math.round(p.x / 4) * 4, y = Math.round(p.y / 4) * 4;   // 4px 격자에 맞춰 도트처럼
+                    const h = Math.cos(p.t) > 0 ? SIZE : SIZE / 2;                     // 뒤집히는 느낌
+                    ctx.fillStyle = '#202020'; ctx.fillRect(x - 2, y - 2, SIZE + 4, h + 4);
+                    ctx.fillStyle = p.color; ctx.fillRect(x, y, SIZE, h);
+                }
+                if (parts.length || performance.now() < rainUntil) requestAnimationFrame(frame);
+                else { running = false; ctx.clearRect(0, 0, W, H); }                 // 다 떨어지면 루프 종료
+            }
+            function run() { if (!running) { running = true; requestAnimationFrame(frame); } }
+            addEventListener('resize', resize); resize();
+            return {
+                win() { palette = PAL_WIN; cannon(60); run(); },
+                lucky() {
+                    palette = PAL_LUCKY; cannon(110); rain(60); rainUntil = performance.now() + 3500;
+                    setTimeout(() => cannon(80), 900); run();
+                },
+                clear() { parts = []; rainUntil = 0; },
+            };
+        })();
+
+        /* =====================================================================
+ *  🏁 결과 화면 — 성공 / 실패 / LUCKY(전설의 포켓몬 등장)
+ * ===================================================================== */
+        function miniRow(symbols, hit) {           // 결과 3칸 미니 표시 (일치한 칸은 노란색)
+            return `<div class="result-row">${symbols.map(s =>
+                `<div class="mini${s === hit ? ' hit' : ''}">${imageOk[s] === false ? s : `<img src="${srcOf(s)}" alt="${s}">`}</div>`
+            ).join('')}</div>`;
+        }
+        function stampHTML(main = 'MISSION<br>CLEAR', delay = 0.3) {
+            return `<div class="stamp" style="animation-delay:${delay}s">
+    <span class="s-top">공대인의 밤</span><span class="s-main">${main}</span><span class="s-bot">★★★</span>
+  </div>`;
+        }
+        const RETRY_HTML = `<div><button class="retry-btn notch" disabled>다시 하기</button></div>`;
+
+        let retryTimer = null;
+        function armRetry(lockMs) {                // '다시 하기' 버튼 연결 + 오터치 방지 잠금
+            const retry = overlay.querySelector('.retry-btn');
+            retry.addEventListener('click', resetGame);
+            clearTimeout(retryTimer);
+            retryTimer = setTimeout(() => { retry.disabled = false; game.retryReady = true; }, lockMs);
+        }
+
         function showResult() {
             const res = judge(game.result);
-            const msg = {
-                lucky: 'LUCKY!! 메가 임형대가 나타났다!',
-                win: `미션 성공! ${res.symbol} ${res.count}칸 일치!`,
-                lose: '미션 실패…… 눈앞이 깜깜해졌다!'
-            }[res.type];
-            setStatus(msg + ' (다시 하려면 시작)');
-            reels.forEach(r => { r.state = 'idle'; });
+            game.state = 'result';
+            game.retryReady = false;
+            if (res.type === 'lucky') { showLegend(); return; }     // 🌟 전설 등장 연출로
+
+            overlay.className = 'overlay ' + res.type;
+            if (res.type === 'win') {
+                overlay.innerHTML = `
+      <div class="panel notch">
+        <h2>미션 성공!</h2>
+        <p class="sub">${res.symbol} ${res.count}칸 일치!</p>
+        ${miniRow(game.result, res.symbol)}
+        <div>${stampHTML()}</div>
+        <p class="guide">운영진에게 이 화면을 보여주고 스탬프를 받자!</p>
+        ${RETRY_HTML}
+      </div>`;
+                sfx.win(); confetti.win();
+                setStatus('미션 성공! 스탬프를 받자!');
+            } else {
+                overlay.innerHTML = `
+      <div class="panel notch">
+        <h2>미션 실패!</h2>
+        <p class="sub">눈앞이 깜깜해졌다……</p>
+        ${miniRow(game.result, null)}
+        <p class="guide">같은 포켓몬이 ${SUCCESS_MATCH}칸 이상 나와야 성공!</p>
+        ${RETRY_HTML}
+      </div>`;
+                sfx.lose();
+                setStatus('미션 실패…… 다음엔 꼭!');
+            }
+            overlay.hidden = false;
+            armRetry(RETRY_LOCK_MS);
+        }
+
+        /* ───── 🌟 전설의 포켓몬 등장 연출 ─────
+         *  0.0s 조우(번쩍 + 검은 줄무늬) → 1.4s 실루엣 → 3.0s 정체 공개 → 5.6s 스탬프 3개
+         *  연출 중 화면 터치 / Space → 바로 결과로 건너뛰기                                   */
+        let legendTimers = [];
+        function later(ms, fn) { legendTimers.push(setTimeout(fn, ms)); }
+        function clearLegend() { legendTimers.forEach(t => { clearTimeout(t); clearInterval(t); }); legendTimers = []; }
+
+        function typeInto(el, text) {              // 연출용 대화창 타이핑
+            let i = 0;
+            el.textContent = '';
+            const t = setInterval(() => {
+                el.textContent = text.slice(0, ++i);
+                if (i % 2 === 0) sfx.blip();
+                if (i >= text.length) clearInterval(t);
+            }, TYPE_SPEED_MS * 1.6);
+            legendTimers.push(t);
+        }
+
+        function showLegend() {
+            game.legend = true;
+            const img = imageOk[EASTER_EGG_SYMBOL] === false
+                ? `<div class="legend-img legend-fallback">?</div>`
+                : `<img class="legend-img" src="${srcOf(EASTER_EGG_SYMBOL)}" alt="메가 임형대">`;
+            overlay.className = 'overlay legend enc';
+            overlay.innerHTML = `
+    <div class="enc-layer">
+      <div class="enc-flash"></div>
+      <div class="enc-bars">${Array.from({ length: 10 }, (_, i) => `<i style="animation-delay:${0.6 + i * 0.05}s"></i>`).join('')}</div>
+    </div>
+    <div class="aura"></div>
+    <div class="legend-stage">
+      <p class="legend-title">!! 전설의 포켓몬 !!</p>
+      ${img}
+      <div class="dialog legend-dialog"><p class="legend-text"></p><span class="cursor">▼</span></div>
+      <p class="legend-skip">화면을 누르면 건너뛰기</p>
+    </div>
+    <div class="reveal-flash"></div>`;
+            overlay.hidden = false;
+            overlay.onclick = () => showLuckyResult();
+            sfx.encounter();
+            setStatus('……!? 무언가 다가온다!');
+
+            const text = overlay.querySelector('.legend-text');
+            later(1400, () => {
+                overlay.className = 'overlay legend reveal';
+                sfx.rumble();
+                typeInto(text, '……!? 엄청난 기운이 느껴진다……');
+            });
+            later(3000, () => {
+                overlay.className = 'overlay legend reveal revealed';
+                sfx.legend();
+                typeInto(text, '앗! 전설의 포켓몬 메가 임형대가 나타났다!!');
+            });
+            later(5600, showLuckyResult);
+        }
+
+        function showLuckyResult() {
+            if (!game.legend) return;
+            clearLegend();
+            game.legend = false;
+            overlay.onclick = null;
+            const img = imageOk[EASTER_EGG_SYMBOL] === false ? '' : `<img class="mega-img" src="${srcOf(EASTER_EGG_SYMBOL)}" alt="메가 임형대">`;
+            const stamps = Array.from({ length: LUCKY_STAMPS }, (_, i) => stampHTML('LEGEND<br>CLEAR', 0.4 + i * 0.4)).join('');
+            overlay.className = 'overlay lucky';
+            overlay.innerHTML = `
+    <div class="lucky-wrap">
+      <h2 class="lucky-text">LUCKY!</h2>
+      <div class="panel notch">
+        ${img}
+        <p class="sub">전설의 포켓몬 메가 임형대를 만났다!</p>
+        <p class="stamp-count">스탬프 ×${LUCKY_STAMPS}</p>
+        <div class="stamp-row">${stamps}</div>
+        <p class="guide">운영진에게 이 화면을 보여주고 스탬프 ${LUCKY_STAMPS}개를 받자!</p>
+        ${RETRY_HTML}
+      </div>
+    </div>`;
+            addSparkles(18);
+            sfx.lucky(); confetti.lucky();
+            for (let i = 0; i < LUCKY_STAMPS; i++) setTimeout(sfx.stamp, 600 + i * 400);   // 쾅 쾅 쾅
+            setStatus(`LUCKY!! 스탬프 ${LUCKY_STAMPS}개 획득!`);
+            armRetry(RETRY_LOCK_MS + LUCKY_STAMPS * 400);
+        }
+
+        function addSparkles(n) {                  // LUCKY 화면 반짝이 별
+            for (let i = 0; i < n; i++) {
+                const s = document.createElement('span');
+                s.className = 'sparkle';
+                s.textContent = '★';
+                s.style.left = Math.random() * 100 + 'vw';
+                s.style.top = Math.random() * 100 + 'vh';
+                s.style.fontSize = (16 + randInt(3) * 11) + 'px';
+                s.style.animationDelay = (Math.random() * .6) + 's';
+                overlay.appendChild(s);
+            }
+        }
+
+        function resetGame() {                     // '다시 하기' → 처음 대기 상태로
+            if (game.state !== 'result') return;
+            if (game.legend) { showLuckyResult(); return; }   // 연출 중 Space → 건너뛰기
+            if (!game.retryReady) return;
+            blurFocus();
+            clearTimeout(retryTimer);
+            overlay.hidden = true; overlay.innerHTML = ''; overlay.className = 'overlay';
+            confetti.clear();
+            reels.forEach(r => { r.state = 'idle'; r.setLamp('ready'); });
             game.state = 'ready';
             startBtn.disabled = false;
+            updateStopButtons();
+            setStatus('시작 버튼을 눌러 도전하자!');
         }
-        function resetGame() { }
 
         /* =====================================================================
          *  ⌨️ 입력 (터치 · 마우스 · 키보드)
