@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>포켓 룰렛 · 공대인의 밤</title>
+<style>
+  /* 2단계에서 채웁니다 */
+</style>
+</head>
+<body>
+
+<!-- 이미지 못 찾을 때 뜨는 경고 -->
+<div id="errorBanner" class="error-banner" hidden></div>
+
+<!-- 게임기 화면 -->
+<main class="screen notch">
+  <header class="title-bar">
+    <p class="event">공대인의 밤</p>
+    <h1>포켓 룰렛</h1>
+    <p class="rule">같은 포켓몬이 <b>2칸 이상</b> 나오면 미션 성공!</p>
+  </header>
+
+  <!-- 릴 3개: 램프 / 창 / STOP 버튼 -->
+  <section class="reels" id="reels">
+    <div class="reel-unit">
+      <div class="lamp" data-state="ready">READY</div>
+      <div class="window"><div class="strip"></div><span class="arrow left">▶</span><span class="arrow right">◀</span></div>
+      <button class="stop-btn notch" disabled>STOP<small>1</small></button>
+    </div>
+    <div class="reel-unit">
+      <div class="lamp" data-state="ready">READY</div>
+      <div class="window"><div class="strip"></div><span class="arrow left">▶</span><span class="arrow right">◀</span></div>
+      <button class="stop-btn notch" disabled>STOP<small>2</small></button>
+    </div>
+    <div class="reel-unit">
+      <div class="lamp" data-state="ready">READY</div>
+      <div class="window"><div class="strip"></div><span class="arrow left">▶</span><span class="arrow right">◀</span></div>
+      <button class="stop-btn notch" disabled>STOP<small>3</small></button>
+    </div>
+  </section>
+
+  <!-- 게임 대화창 -->
+  <div class="dialog">
+    <p id="status">이미지 불러오는 중…</p>
+    <span class="cursor">▼</span>
+  </div>
+
+  <div class="controls">
+    <button id="startBtn" class="start-btn notch" disabled><span class="tri">▶</span> 시작</button>
+  </div>
+</main>
+
+<footer class="help">
+  실행 방법: 이 폴더에서 <code>python -m http.server 8000</code> 실행 → <code>http://localhost:8000</code> 접속<br>
+  <code>images/</code> 폴더에 피카츄 · 파이리 · 꼬부기 · 이상해씨 · 메가임형대 .png 5개가 있어야 정상 작동합니다.
+  · 키보드: Space = 시작/다음 STOP, 1·2·3 = 릴별 STOP
+</footer>
+
+<button id="muteBtn" class="mute-btn" title="소리 켜기/끄기">🔊</button>
+<div id="overlay" class="overlay" hidden></div>
+<canvas id="confetti"></canvas>
+
+<script>
+  // 3단계부터 채웁니다
+</script>
+</body>
+</html>
