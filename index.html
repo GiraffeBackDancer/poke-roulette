@@ -1,68 +1,841 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>포켓 룰렛 · 공대인의 밤</title>
-<style>
-  /* 2단계에서 채웁니다 */
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>포켓 룰렛 · 공대인의 밤</title>
+    <style>
+        /* ───── 폰트: 갈무리 (SIL OFL, fonts/ 폴더에 포함 → 오프라인 동작) ───── */
+        @font-face {
+            font-family: "Galmuri11";
+            src: url("fonts/Galmuri11.woff2") format("woff2");
+            font-weight: 400;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Galmuri11";
+            src: url("fonts/Galmuri11-Bold.woff2") format("woff2");
+            font-weight: 700;
+            font-display: swap;
+        }
+
+        :root {
+            --ink: #202020;
+            /* 도트 외곽선 */
+            --white: #f8f8f8;
+            --screen: #e8e0a0;
+            /* 게임기 화면 올리브 */
+            --screen-dot: #d8d088;
+            --red: #e03c28;
+            --blue: #3c64d8;
+            --green: #48b048;
+            --yellow: #f8d030;
+            --pink: #e878a8;
+            --gray: #9098a8;
+            --px: 4px;
+            /* 도트 1칸 크기 */
+            --cell: clamp(64px, min(20vw, 11vh), 140px);
+            --reel-w: calc(var(--cell) * 1.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Galmuri11", monospace;
+            -webkit-font-smoothing: none;
+            font-smooth: never;
+            background: #2a2a34;
+            background-image:
+                linear-gradient(45deg, #30303c 25%, transparent 25%, transparent 75%, #30303c 75%),
+                linear-gradient(45deg, #30303c 25%, transparent 25%, transparent 75%, #30303c 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 8px 8px;
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        button {
+            font-family: inherit;
+        }
+
+        /* 계단 모서리(도트 느낌) 공통 */
+        .notch {
+            clip-path: polygon(0 var(--px), var(--px) var(--px), var(--px) 0,
+                    calc(100% - var(--px)) 0, calc(100% - var(--px)) var(--px), 100% var(--px),
+                    100% calc(100% - var(--px)), calc(100% - var(--px)) calc(100% - var(--px)), calc(100% - var(--px)) 100%,
+                    var(--px) 100%, var(--px) calc(100% - var(--px)), 0 calc(100% - var(--px)));
+        }
+
+        /* ───── 에러 배너 ───── */
+        .error-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: var(--white);
+            border-bottom: 4px solid var(--red);
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--red);
+        }
+
+        .error-banner .hint {
+            color: var(--ink);
+            font-size: 12px;
+        }
+
+        .error-banner code {
+            background: var(--screen);
+            padding: 0 4px;
+        }
+
+        .error-banner[hidden] {
+            display: none;
+        }
+
+        .test-badge {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            z-index: 90;
+            background: var(--blue);
+            color: #fff;
+            font-size: 12px;
+            padding: 6px 8px;
+            border: 2px solid var(--ink);
+        }
+
+        /* ───── 게임기 화면 ───── */
+        .screen {
+            width: min(100%, 760px);
+            background-color: var(--screen);
+            background-image: radial-gradient(var(--screen-dot) 1px, transparent 1.5px);
+            background-size: 6px 6px;
+            border: 6px solid var(--ink);
+            box-shadow: inset 0 0 0 4px #f4eec0;
+            padding: clamp(12px, 2.4vw, 22px);
+        }
+
+        .title-bar {
+            text-align: center;
+        }
+
+        .event {
+            display: inline-block;
+            font-size: 12px;
+            letter-spacing: .2em;
+            background: var(--ink);
+            color: var(--screen);
+            padding: 4px 10px;
+        }
+
+        h1 {
+            font-weight: 700;
+            line-height: 1.15;
+            margin-top: 6px;
+            font-size: clamp(33px, min(7vw, 6.5vh), 55px);
+            color: var(--red);
+            text-shadow:
+                3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink),
+                3px 3px 0 var(--ink), -3px -3px 0 var(--ink), 3px -3px 0 var(--ink), -3px 3px 0 var(--ink),
+                6px 6px 0 var(--ink);
+            letter-spacing: .06em;
+        }
+
+        .rule {
+            font-size: clamp(12px, 1.9vw, 16px);
+            margin-top: 6px;
+        }
+
+        .rule b {
+            color: var(--red);
+        }
+
+        /* 릴 영역 */
+        .reels {
+            display: flex;
+            justify-content: center;
+            gap: clamp(10px, 2.4vw, 24px);
+            margin: clamp(10px, 2vh, 18px) 0;
+        }
+
+        .reel-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* READY / GO / STOP 램프 */
+        .lamp {
+            width: var(--reel-w);
+            text-align: center;
+            font-weight: 700;
+            font-size: clamp(12px, 1.9vw, 16px);
+            letter-spacing: .1em;
+            padding: 4px 0;
+            border: 3px solid var(--ink);
+        }
+
+        .lamp[data-state="ready"] {
+            background: var(--yellow);
+        }
+
+        .lamp[data-state="go"] {
+            background: var(--green);
+            color: #fff;
+            animation: blink .4s steps(1) infinite;
+        }
+
+        .lamp[data-state="stop"] {
+            background: var(--red);
+            color: #fff;
+        }
+
+        @keyframes blink {
+            50% {
+                background: var(--white);
+                color: var(--ink);
+            }
+        }
+
+        /* 릴 창 */
+        .window {
+            position: relative;
+            overflow: hidden;
+            width: var(--reel-w);
+            height: calc(var(--cell) * 3);
+            background: var(--white);
+            border: var(--px) solid var(--ink);
+            box-shadow: var(--px) var(--px) 0 rgba(32, 32, 32, .35);
+        }
+
+        .window::after {
+            /* 위·아래 계단식 음영 */
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: linear-gradient(180deg,
+                    rgba(32, 32, 32, .28) 0 7%, rgba(32, 32, 32, .14) 7% 15%, transparent 15% 85%,
+                    rgba(32, 32, 32, .14) 85% 93%, rgba(32, 32, 32, .28) 93% 100%);
+        }
+
+        .window::before {
+            /* 가운데 당첨 줄 */
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            z-index: 3;
+            pointer-events: none;
+            top: calc(var(--cell) - 2px);
+            height: calc(var(--cell) + 4px);
+            border-top: 3px dashed var(--red);
+            border-bottom: 3px dashed var(--red);
+        }
+
+        .arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 4;
+            color: var(--red);
+            font-size: clamp(12px, 2vw, 18px);
+        }
+
+        .arrow.left {
+            left: 0;
+        }
+
+        .arrow.right {
+            right: 0;
+        }
+
+        .strip {
+            position: absolute;
+            inset: 0;
+        }
+
+        .cell {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: var(--cell);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10%;
+            will-change: transform;
+        }
+
+        .cell img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            pointer-events: none;
+        }
+
+        .cell .fallback {
+            font-weight: 700;
+            font-size: calc(var(--cell) * .15);
+            text-align: center;
+            word-break: keep-all;
+            background: var(--ink);
+            color: var(--white);
+            padding: 4px 6px;
+        }
+
+        .cell.mega {
+            background: repeating-linear-gradient(45deg, #fff4b0 0 6px, #ffe070 6px 12px);
+        }
+
+        .reel-unit.spinning .cell img,
+        .reel-unit.spinning .cell .fallback {
+            transform: scaleY(1.2);
+            opacity: .85;
+        }
+
+        /* STOP 버튼 (게임기 버튼 느낌) */
+        .stop-btn {
+            width: var(--reel-w);
+            height: clamp(54px, 8vh, 84px);
+            border: var(--px) solid var(--ink);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: clamp(18px, 3vw, 28px);
+            letter-spacing: .06em;
+            line-height: 1;
+            color: #fff;
+            background: var(--red);
+            box-shadow: inset -4px -4px 0 rgba(0, 0, 0, .28), inset 4px 4px 0 rgba(255, 255, 255, .35), 0 var(--px) 0 var(--ink);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .stop-btn small {
+            font-size: .5em;
+            font-weight: 400;
+        }
+
+        .stop-btn:active:not(:disabled) {
+            transform: translateY(var(--px));
+            box-shadow: inset 4px 4px 0 rgba(0, 0, 0, .28);
+        }
+
+        .stop-btn:disabled {
+            background: var(--gray);
+            color: #e0e0e0;
+            cursor: default;
+        }
+
+        .stop-btn.next {
+            animation: btnBlink .5s steps(1) infinite;
+        }
+
+        @keyframes btnBlink {
+            50% {
+                background: var(--yellow);
+                color: var(--ink);
+            }
+        }
+
+        /* 대화창 (두 줄 테두리 + ▼) */
+        .dialog {
+            position: relative;
+            background: var(--white);
+            border: var(--px) solid var(--ink);
+            box-shadow: inset 0 0 0 4px var(--white), inset 0 0 0 7px var(--ink);
+            padding: 16px 40px 16px 20px;
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            font-size: clamp(15px, 2.6vw, 22px);
+            line-height: 1.5;
+        }
+
+        .cursor {
+            position: absolute;
+            right: 16px;
+            bottom: 10px;
+            font-size: 14px;
+            animation: cursorBlink .8s steps(1) infinite;
+        }
+
+        @keyframes cursorBlink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* 시작 버튼 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: clamp(10px, 2vh, 16px);
+        }
+
+        .start-btn {
+            width: min(100%, 420px);
+            height: clamp(54px, 8.5vh, 80px);
+            border: var(--px) solid var(--ink);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: clamp(22px, 3.8vw, 34px);
+            letter-spacing: .2em;
+            color: var(--ink);
+            background: var(--yellow);
+            box-shadow: inset -4px -4px 0 rgba(0, 0, 0, .2), inset 4px 4px 0 rgba(255, 255, 255, .5), 0 6px 0 var(--ink);
+        }
+
+        .start-btn:active:not(:disabled) {
+            transform: translateY(6px);
+            box-shadow: inset 4px 4px 0 rgba(0, 0, 0, .2);
+        }
+
+        .start-btn:disabled {
+            background: var(--gray);
+            color: #d8d8d8;
+            cursor: default;
+        }
+
+        .start-btn:not(:disabled) .tri {
+            display: inline-block;
+            animation: nudge .6s steps(2) infinite;
+        }
+
+        @keyframes nudge {
+            50% {
+                transform: translateX(6px);
+            }
+        }
+
+        .help {
+            max-width: 760px;
+            text-align: center;
+            line-height: 1.8;
+            font-size: 11px;
+            color: #a8a8b8;
+        }
+
+        .help code {
+            color: #e8e0a0;
+        }
+
+        .mute-btn {
+            position: fixed;
+            right: 12px;
+            bottom: 12px;
+            z-index: 40;
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--ink);
+            background: var(--white);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        /* ───── 결과 화면 ───── */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            padding: 16px;
+            overflow: auto;
+            background: rgba(20, 20, 28, .82);
+            animation: fadeIn .2s steps(3);
+        }
+
+        .overlay[hidden] {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+        }
+
+        .panel {
+            position: relative;
+            margin: auto;
+            width: min(100%, 600px);
+            text-align: center;
+            background: var(--white);
+            border: 6px solid var(--ink);
+            box-shadow: inset 0 0 0 5px var(--white), inset 0 0 0 9px var(--ink), 8px 8px 0 rgba(0, 0, 0, .5);
+            padding: clamp(20px, min(4vw, 3.5vh), 34px);
+            animation: popIn .3s steps(4);
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(.4);
+            }
+        }
+
+        .panel h2 {
+            font-weight: 700;
+            line-height: 1.1;
+            font-size: clamp(40px, min(10vw, 10vh), 77px);
+            text-shadow: 4px 4px 0 var(--ink);
+        }
+
+        .overlay.win h2 {
+            color: var(--red);
+        }
+
+        .overlay.lose h2 {
+            color: var(--blue);
+        }
+
+        .overlay.lose .panel {
+            animation: popIn .3s steps(4), shake .4s .3s steps(4);
+        }
+
+        @keyframes shake {
+            25% {
+                transform: translateX(-10px);
+            }
+
+            75% {
+                transform: translateX(10px);
+            }
+        }
+
+        .sub {
+            font-size: clamp(16px, 2.8vw, 22px);
+            margin-top: 10px;
+        }
+
+        .guide {
+            font-size: clamp(14px, 2.2vw, 18px);
+            margin-top: 14px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 14px 0 4px;
+        }
+
+        .mini {
+            width: clamp(56px, 10vw, 84px);
+            aspect-ratio: 1;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--white);
+            border: var(--px) solid var(--ink);
+            font-size: 11px;
+        }
+
+        .mini img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+
+        .mini.hit {
+            background: var(--yellow);
+        }
+
+        .overlay.lose .mini {
+            filter: grayscale(1);
+        }
+
+        .retry-btn {
+            margin-top: 18px;
+            height: 60px;
+            padding: 0 36px;
+            border: var(--px) solid var(--ink);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: clamp(18px, 3vw, 24px);
+            background: var(--yellow);
+            color: var(--ink);
+            box-shadow: inset -4px -4px 0 rgba(0, 0, 0, .2), 0 var(--px) 0 var(--ink);
+        }
+
+        .retry-btn::before {
+            content: "▶ ";
+        }
+
+        .retry-btn:disabled {
+            background: var(--gray);
+            color: #e0e0e0;
+            cursor: default;
+        }
+
+        .retry-btn:active:not(:disabled) {
+            transform: translateY(var(--px));
+            box-shadow: none;
+        }
+
+        /* 스탬프 (쾅! 찍히는 연출) */
+        .stamp {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 14px;
+            padding: 12px 18px;
+            width: clamp(150px, min(30vw, 24vh), 210px);
+            aspect-ratio: 1;
+            color: var(--red);
+            background: #fff3f0;
+            border: var(--px) solid var(--red);
+            box-shadow: inset 0 0 0 4px #fff3f0, inset 0 0 0 7px var(--red);
+            opacity: 0;
+            animation: stampIn .45s .3s steps(5) forwards;
+        }
+
+        .stamp .s-top {
+            font-size: clamp(11px, 1.8vw, 14px);
+        }
+
+        .stamp .s-main {
+            font-weight: 700;
+            font-size: clamp(20px, 3.6vw, 30px);
+            line-height: 1.1;
+        }
+
+        .stamp .s-bot {
+            font-size: clamp(11px, 1.8vw, 14px);
+            letter-spacing: .3em;
+        }
+
+        @keyframes stampIn {
+            0% {
+                opacity: 1;
+                transform: scale(2.6);
+            }
+
+            70% {
+                opacity: 1;
+                transform: scale(.9);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* LUCKY (이스터에그) */
+        .overlay.lucky {
+            animation: fadeIn .2s steps(3), flash .5s steps(1) infinite;
+        }
+
+        @keyframes flash {
+            0% {
+                background: rgba(248, 208, 48, .92);
+            }
+
+            25% {
+                background: rgba(224, 60, 40, .92);
+            }
+
+            50% {
+                background: rgba(60, 100, 216, .92);
+            }
+
+            75% {
+                background: rgba(72, 176, 72, .92);
+            }
+        }
+
+        .lucky-wrap {
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .lucky-text {
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: .04em;
+            font-size: clamp(66px, min(19vw, 17vh), 198px);
+            color: var(--yellow);
+            text-shadow:
+                5px 0 0 var(--ink), -5px 0 0 var(--ink), 0 5px 0 var(--ink), 0 -5px 0 var(--ink),
+                5px 5px 0 var(--ink), -5px -5px 0 var(--ink), 5px -5px 0 var(--ink), -5px 5px 0 var(--ink),
+                10px 10px 0 var(--ink);
+            animation: luckyIn .4s steps(4), bounce .6s .4s steps(2) infinite;
+        }
+
+        @keyframes luckyIn {
+            from {
+                transform: scale(.2);
+            }
+        }
+
+        @keyframes bounce {
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .overlay.lucky .panel {
+            margin-top: 12px;
+        }
+
+        .overlay.lucky .sub {
+            font-weight: 700;
+        }
+
+        .big-ok {
+            font-weight: 700;
+            font-size: clamp(28px, 5.5vw, 44px);
+            color: var(--red);
+            text-shadow: 3px 3px 0 var(--ink);
+            margin-top: 6px;
+        }
+
+        .mega-img {
+            width: clamp(84px, min(22vw, 15vh), 160px);
+            aspect-ratio: 1;
+            object-fit: cover;
+            border: 6px solid var(--ink);
+            background: var(--yellow);
+            box-shadow: 0 0 0 4px var(--yellow), 0 0 0 8px var(--ink);
+            image-rendering: pixelated;
+        }
+
+        .sparkle {
+            position: fixed;
+            z-index: 51;
+            pointer-events: none;
+            color: #fff;
+            text-shadow: 2px 2px 0 var(--ink);
+            animation: twinkle .6s steps(2) infinite;
+        }
+
+        @keyframes twinkle {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        #confetti {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 60;
+            image-rendering: pixelated;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .lamp,
+            .stop-btn.next,
+            .cursor,
+            .tri,
+            .lucky-text,
+            .overlay.lucky,
+            .sparkle {
+                animation: none !important;
+            }
+        }
+    </style>
 </head>
+
 <body>
 
-<!-- 이미지 못 찾을 때 뜨는 경고 -->
-<div id="errorBanner" class="error-banner" hidden></div>
+    <!-- 이미지 못 찾을 때 뜨는 경고 -->
+    <div id="errorBanner" class="error-banner" hidden></div>
 
-<!-- 게임기 화면 -->
-<main class="screen notch">
-  <header class="title-bar">
-    <p class="event">공대인의 밤</p>
-    <h1>포켓 룰렛</h1>
-    <p class="rule">같은 포켓몬이 <b>2칸 이상</b> 나오면 미션 성공!</p>
-  </header>
+    <!-- 게임기 화면 -->
+    <main class="screen notch">
+        <header class="title-bar">
+            <p class="event">공대인의 밤</p>
+            <h1>포켓 룰렛</h1>
+            <p class="rule">같은 포켓몬이 <b>2칸 이상</b> 나오면 미션 성공!</p>
+        </header>
 
-  <!-- 릴 3개: 램프 / 창 / STOP 버튼 -->
-  <section class="reels" id="reels">
-    <div class="reel-unit">
-      <div class="lamp" data-state="ready">READY</div>
-      <div class="window"><div class="strip"></div><span class="arrow left">▶</span><span class="arrow right">◀</span></div>
-      <button class="stop-btn notch" disabled>STOP<small>1</small></button>
-    </div>
-    <div class="reel-unit">
-      <div class="lamp" data-state="ready">READY</div>
-      <div class="window"><div class="strip"></div><span class="arrow left">▶</span><span class="arrow right">◀</span></div>
-      <button class="stop-btn notch" disabled>STOP<small>2</small></button>
-    </div>
-    <div class="reel-unit">
-      <div class="lamp" data-state="ready">READY</div>
-      <div class="window"><div class="strip"></div><span class="arrow left">▶</span><span class="arrow right">◀</span></div>
-      <button class="stop-btn notch" disabled>STOP<small>3</small></button>
-    </div>
-  </section>
+        <!-- 릴 3개: 램프 / 창 / STOP 버튼 -->
+        <section class="reels" id="reels">
+            <div class="reel-unit">
+                <div class="lamp" data-state="ready">READY</div>
+                <div class="window">
+                    <div class="strip"></div><span class="arrow left">▶</span><span class="arrow right">◀</span>
+                </div>
+                <button class="stop-btn notch" disabled>STOP<small>1</small></button>
+            </div>
+            <div class="reel-unit">
+                <div class="lamp" data-state="ready">READY</div>
+                <div class="window">
+                    <div class="strip"></div><span class="arrow left">▶</span><span class="arrow right">◀</span>
+                </div>
+                <button class="stop-btn notch" disabled>STOP<small>2</small></button>
+            </div>
+            <div class="reel-unit">
+                <div class="lamp" data-state="ready">READY</div>
+                <div class="window">
+                    <div class="strip"></div><span class="arrow left">▶</span><span class="arrow right">◀</span>
+                </div>
+                <button class="stop-btn notch" disabled>STOP<small>3</small></button>
+            </div>
+        </section>
 
-  <!-- 게임 대화창 -->
-  <div class="dialog">
-    <p id="status">이미지 불러오는 중…</p>
-    <span class="cursor">▼</span>
-  </div>
+        <!-- 게임 대화창 -->
+        <div class="dialog">
+            <p id="status">이미지 불러오는 중…</p>
+            <span class="cursor">▼</span>
+        </div>
 
-  <div class="controls">
-    <button id="startBtn" class="start-btn notch" disabled><span class="tri">▶</span> 시작</button>
-  </div>
-</main>
+        <div class="controls">
+            <button id="startBtn" class="start-btn notch" disabled><span class="tri">▶</span> 시작</button>
+        </div>
+    </main>
 
-<footer class="help">
-  실행 방법: 이 폴더에서 <code>python -m http.server 8000</code> 실행 → <code>http://localhost:8000</code> 접속<br>
-  <code>images/</code> 폴더에 피카츄 · 파이리 · 꼬부기 · 이상해씨 · 메가임형대 .png 5개가 있어야 정상 작동합니다.
-  · 키보드: Space = 시작/다음 STOP, 1·2·3 = 릴별 STOP
-</footer>
+    <footer class="help">
+        실행 방법: 이 폴더에서 <code>python -m http.server 8000</code> 실행 → <code>http://localhost:8000</code> 접속<br>
+        <code>images/</code> 폴더에 피카츄 · 파이리 · 꼬부기 · 이상해씨 · 메가임형대 .png 5개가 있어야 정상 작동합니다.
+        · 키보드: Space = 시작/다음 STOP, 1·2·3 = 릴별 STOP
+    </footer>
 
-<button id="muteBtn" class="mute-btn" title="소리 켜기/끄기">🔊</button>
-<div id="overlay" class="overlay" hidden></div>
-<canvas id="confetti"></canvas>
+    <button id="muteBtn" class="mute-btn" title="소리 켜기/끄기">🔊</button>
+    <div id="overlay" class="overlay" hidden></div>
+    <canvas id="confetti"></canvas>
 
-<script>
-  // 3단계부터 채웁니다
-</script>
+    <script>
+        // 3단계부터 채웁니다
+    </script>
 </body>
+
 </html>
