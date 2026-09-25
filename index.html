@@ -926,16 +926,151 @@
         }
 
         /* =====================================================================
-         *  ▶ 시작 (항상 맨 아래 — 단계마다 이 블록만 교체)
-         * ===================================================================== */
+ *  🎰 릴 — 세로로 무한히 이어지는 그림 띠
+ *   - pos : 창 맨 윗칸의 위치(칸 단위, 소수 가능). pos가 줄어들면 그림이 아래로 흐름
+ *   - pos가 정수일 때 가운데 칸 = index (pos + 1)
+ *   - 실제 DOM 칸은 4개뿐, 위치만 옮기면서 그림을 갈아 끼움(재활용)
+ * ===================================================================== */
+        let cellH = 100;   // 한 칸 높이(px) — measure()가 실제 값으로 갱신
+
+        function makeCell() {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            const img = document.createElement('img');
+            img.alt = ''; img.draggable = false;
+            const fb = document.createElement('span');          // 이미지 없을 때 대신 보여줄 글자
+            fb.className = 'fallback'; fb.style.display = 'none';
+            cell.append(img, fb);
+            return cell;
+        }
+
+        function paintCell(cell, name) {
+            if (cell.dataset.sym === name) return;              // 같은 그림이면 다시 안 그림(성능)
+            cell.dataset.sym = name;
+            const [img, fb] = cell.children;
+            if (imageOk[name] === false) {
+                img.style.display = 'none'; fb.textContent = name; fb.style.display = '';
+            } else {
+                img.src = srcOf(name); img.alt = name; img.style.display = ''; fb.style.display = 'none';
+            }
+            cell.classList.toggle('mega', name === EASTER_EGG_SYMBOL);
+        }
+
+        class Reel {
+            constructor(unit, index) {
+                this.unit = unit; this.index = index;
+                this.lamp = unit.querySelector('.lamp');
+                this.btn = unit.querySelector('.stop-btn');
+                this.win = unit.querySelector('.window');
+                const strip = unit.querySelector('.strip');
+                this.cells = Array.from({ length: 4 }, () => strip.appendChild(makeCell()));
+                // 회전 중 보이는 그림 순서 (일반 4종만! 메가임형대는 결과 칸에만 끼워 넣음)
+                this.order = [...shuffle(NORMAL_SYMBOLS), ...shuffle(NORMAL_SYMBOLS)];
+                this.pos = randInt(this.order.length);
+                this.overrides = new Map();   // index → 결과 그림 (멈출 자리에만 사용)
+                this.state = 'idle';          // idle → spinning → stopping → settling → stopped
+                this.onStopped = null;
+            }
+
+            symbolAt(i) {                   // i번째 칸에 올 그림
+                if (this.overrides.has(i)) return this.overrides.get(i);
+                const n = this.order.length;
+                return this.order[((i % n) + n) % n];   // 음수 index도 안전하게 순환
+            }
+
+            render() {
+                const base = Math.floor(this.pos);
+                this.cells.forEach((cell, r) => {
+                    const i = base + r;
+                    cell.style.transform = `translate3d(0, ${Math.round((i - this.pos) * cellH)}px, 0)`;
+                    paintCell(cell, this.symbolAt(i));
+                });
+            }
+
+            setLamp(state) {
+                this.lamp.dataset.state = state;
+                this.lamp.textContent = { ready: 'READY', go: 'GO!', stop: 'STOP' }[state];
+            }
+
+            start(now) {
+                this.state = 'spinning'; this.spinStart = now;
+                this.unit.classList.add('spinning'); this.setLamp('go');
+            }
+
+            canStop(now) { return this.state === 'spinning' && now - this.spinStart >= MIN_SPIN_MS; }
+
+            // ★ 미리 정해둔 결과(symbol)가 가운데 칸에 오도록 감속 정지
+            stop(symbol, now) {
+                const base = Math.floor(this.pos);
+                const target = base - STOP_DISTANCE;                // 6칸 더 지나서 멈출 위치
+                for (const k of [...this.overrides.keys()]) if (k > base + 4 || k < target) this.overrides.delete(k);
+                this.overrides.set(target + 1, symbol);             // 멈출 자리의 가운데 칸에 결과를 끼워 넣음
+                this.from = this.pos; this.target = target;
+                // ease-out-cubic 시작 속도(3·거리/시간) = 현재 회전 속도 → '뚝' 끊기지 않음
+                this.duration = (3 * (this.from - target) / SPIN_SPEED) * 1000;
+                this.stopStart = now; this.state = 'stopping';
+                this.setLamp('stop');
+            }
+
+            update(now, dt) {
+                if (this.state === 'spinning') {
+                    const ramp = Math.min(1, (now - this.spinStart) / 250);          // 0.25초 동안 가속
+                    this.pos -= SPIN_SPEED * ramp * dt;
+                } else if (this.state === 'stopping') {
+                    const t = Math.min(1, (now - this.stopStart) / this.duration);
+                    this.pos = this.from + (this.target - this.from) * (1 - Math.pow(1 - t, 3));   // 감속
+                    if (t > 0.55) this.unit.classList.remove('spinning');
+                    if (t >= 1) { this.state = 'settling'; this.settleStart = now; }
+                } else if (this.state === 'settling') {                            // '딸깍' 살짝 튕김
+                    const t = Math.min(1, (now - this.settleStart) / 180);
+                    this.pos = this.target - 0.09 * Math.sin(Math.PI * t);
+                    if (t >= 1) {
+                        this.pos = this.target; this.state = 'stopped'; this.render();
+                        if (this.onStopped) this.onStopped(this);
+                        return;
+                    }
+                } else return;                                                     // idle/stopped: 안 그림
+                this.render();
+            }
+        }
+
+        const reels = [...document.querySelectorAll('.reel-unit')].map((u, i) => new Reel(u, i));
+
+        function measure() {                       // 화면 크기에 맞춰 한 칸 높이 다시 계산
+            cellH = reels[0].win.clientHeight / 3;
+            reels.forEach(r => r.render());
+        }
+
+        let last = performance.now();
+        function loop(now) {                       // 매 프레임(약 1/60초)마다 릴 위치 갱신
+            const dt = Math.min(0.05, (now - last) / 1000);
+            last = now;
+            reels.forEach(r => r.update(now, dt));
+            requestAnimationFrame(loop);
+        }
+
+        /* =====================================================================
+ *  ▶ 시작 (항상 맨 아래 — 단계마다 이 블록만 교체)
+ * ===================================================================== */
         (function init() {
+            addEventListener('resize', measure);
+            measure();
+            requestAnimationFrame(loop);
             checkImages().then(() => {
                 const missing = ALL_SYMBOLS.filter(n => !imageOk[n]);
                 if (missing.length) showImageErrors(missing);
+                reels.forEach(r => r.cells.forEach(c => { delete c.dataset.sym; }));  // 로드 결과 반영해 다시 그리기
+                measure();
                 document.getElementById('status').textContent =
-                    `이미지 ${ALL_SYMBOLS.length - missing.length}/${ALL_SYMBOLS.length}개 확인 완료!`;
+                    `이미지 ${ALL_SYMBOLS.length - missing.length}/${ALL_SYMBOLS.length}개 확인 완료! 콘솔에서 demo.spin()`;
             });
-            window.PokeRoulette = { decideResult, judge, forcedResult, EASTER_EGG_CHANCE, NORMAL_SYMBOLS, EASTER_EGG_SYMBOL };  // 콘솔 테스트용
+            window.PokeRoulette = { decideResult, judge, forcedResult, EASTER_EGG_CHANCE, NORMAL_SYMBOLS, EASTER_EGG_SYMBOL };
+
+            // 🧪 4단계 임시 테스트용 (5단계에서 이 블록 통째로 교체됨)
+            window.demo = {
+                spin() { const now = performance.now(); reels.forEach(r => r.start(now)); },
+                stop(i, name = NORMAL_SYMBOLS[randInt(NORMAL_SYMBOLS.length)]) { reels[i].stop(name, performance.now()); },
+            };
         })();
     </script>
 </body>
